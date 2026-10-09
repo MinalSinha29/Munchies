@@ -1,35 +1,42 @@
 // backend/routes/orderRoutes.js
 import express from "express";
 import Order from "../models/Order.js";
+import Restaurant from "../models/Restaurant.js";
 import { protect } from "../middleware/authMiddleware.js";
+import { computeTotals } from "../utils/billing.js";
+import { buildOrderItems } from "../utils/orderItems.js";
 
 const router = express.Router();
 
 /**
  * POST /api/orders
- * Create a new order (guest or logged-in)
+ * Create a new order (login required).
+ * The browser only sends { items: [{ itemId, qty }], paymentMethod }.
+ * Names, prices and totals are calculated here on the server.
  */
-router.post("/", async (req, res) => {
+router.post("/", protect, async (req, res) => {
   try {
-    console.log("📦 New Order Request:", req.body);
+    const { items: cartItems, paymentMethod } = req.body;
 
-    const { user, items, total, paymentMethod } = req.body;
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (!Array.isArray(cartItems) || cartItems.length === 0) {
       return res.status(400).json({ message: "No items in order" });
     }
-    if (!total || total <= 0) {
-      return res.status(400).json({ message: "Invalid total amount" });
-    }
+
+    const itemIds = cartItems.map((i) => i?.itemId).filter(Boolean);
+    const restaurants = await Restaurant.find({ "menu.itemId": { $in: itemIds } });
+
+    const { items, error } = buildOrderItems(cartItems, restaurants);
+    if (error) return res.status(400).json({ message: error });
+
+    const totals = computeTotals(items);
 
     const order = await Order.create({
-      user: user || null,
+      user: req.user._id,
       items,
-      total,
       paymentMethod: paymentMethod || "Unknown",
+      ...totals,
     });
 
-    console.log("✅ Order saved:", order._id);
     res.status(201).json({ message: "✅ Order placed successfully", order });
   } catch (err) {
     console.error("💥 Error creating order:", err);
@@ -53,13 +60,15 @@ router.get("/mine", protect, async (req, res) => {
 
 /**
  * GET /api/orders/:id
- * Fetch a single order by id (for bill page)
- * (You can add `protect` + ownership checks later)
+ * Fetch a single order by id (for bill page). Only the owner can see it.
  */
-router.get("/:id", async (req, res) => {
+router.get("/:id", protect, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!order.user || String(order.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Not allowed to view this order" });
+    }
     res.json(order);
   } catch (err) {
     console.error("💥 Error fetching order by id:", err);

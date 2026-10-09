@@ -1,14 +1,29 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import restaurants from "../data/restaurants";
+import axios from "axios";
 import { useCart } from "../context/CartContext";
 
 export default function RestaurantMenu() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const restaurant = restaurants.find((r) => r.id === id);
+  const [restaurant, setRestaurant] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const { cart, addToCart, decreaseQty, total } = useCart();
+
+  // Menu comes from the backend (single source of truth)
+  useEffect(() => {
+    setLoading(true);
+    axios
+      .get(`/api/restaurants/${id}`)
+      .then((res) => setRestaurant(res.data))
+      .catch(() => setRestaurant(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return <div style={{ color: "white", padding: 20 }}>🍽️ Loading menu...</div>;
+  }
 
   if (!restaurant) {
     return (
@@ -20,10 +35,20 @@ export default function RestaurantMenu() {
   }
 
   // Get the quantity of a specific menu item
-  const getQty = (itemName) => {
-    const found = cart.find((i) => i.name === itemName);
+  const getQty = (itemId) => {
+    const found = cart.find((i) => i.itemId === itemId);
     return found ? found.qty : 0;
   };
+
+  // What goes into the cart (enough to place the order and group it by restaurant)
+  const toCartItem = (item) => ({
+    itemId: item.itemId,
+    name: item.name,
+    price: item.price,
+    veg: item.veg,
+    restaurantId: restaurant.id,
+    restaurantName: restaurant.name,
+  });
 
   // Navigate to cart page
   const handleCheckout = () => {
@@ -45,10 +70,10 @@ export default function RestaurantMenu() {
 
       <ul style={{ listStyle: "none", padding: 0 }}>
         {restaurant.menu.map((item, index) => {
-          const qty = getQty(item.name);
+          const qty = getQty(item.itemId);
           return (
             <li
-              key={index}
+              key={item.itemId || index}
               style={{
                 background: "#151824",
                 margin: "8px 0",
@@ -61,15 +86,33 @@ export default function RestaurantMenu() {
               }}
             >
               <div>
-                <div style={{ fontWeight: "600" }}>{item.name}</div>
+                <div style={{ fontWeight: "600" }}>
+                  <span title={item.veg ? "Veg" : "Non-veg"} style={{ marginRight: 6 }}>
+                    {item.veg ? "🟢" : "🔴"}
+                  </span>
+                  {item.name}
+                  {item.spiceLevel > 0 && (
+                    <span style={{ marginLeft: 6 }}>{"🌶️".repeat(item.spiceLevel)}</span>
+                  )}
+                </div>
                 <div style={{ color: "#cbd3e1", fontSize: "14px" }}>₹{item.price}</div>
+                {item.description && (
+                  <div style={{ color: "#8f9bb3", fontSize: "13px", marginTop: 2 }}>
+                    {item.description}
+                  </div>
+                )}
+                {item.allergens && item.allergens.length > 0 && (
+                  <div style={{ color: "#8f9bb3", fontSize: "12px", marginTop: 2 }}>
+                    Contains: {item.allergens.join(", ")}
+                  </div>
+                )}
               </div>
 
               {/* Quantity Control Section */}
               {qty > 0 ? (
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <button
-                    onClick={() => decreaseQty(item.name)}
+                    onClick={() => decreaseQty(item.itemId)}
                     style={{
                       background: "#333",
                       color: "#fff",
@@ -86,7 +129,7 @@ export default function RestaurantMenu() {
                   </button>
                   <span style={{ fontSize: "16px" }}>{qty}</span>
                   <button
-                    onClick={() => addToCart(item)}
+                    onClick={() => addToCart(toCartItem(item))}
                     style={{
                       background: "#333",
                       color: "#fff",
@@ -104,7 +147,7 @@ export default function RestaurantMenu() {
                 </div>
               ) : (
                 <button
-                  onClick={() => addToCart(item)}
+                  onClick={() => addToCart(toCartItem(item))}
                   style={{
                     background: "#ff4d6d",
                     color: "#fff",

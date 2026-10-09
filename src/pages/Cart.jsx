@@ -48,7 +48,7 @@ export default function Cart() {
               {/* Quantity Controls */}
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <button
-                  onClick={() => decreaseQty(item.name)}
+                  onClick={() => decreaseQty(item.itemId || item.name)}
                   style={{
                     background: "#333",
                     color: "#fff",
@@ -84,7 +84,7 @@ export default function Cart() {
 
               {/* Remove button */}
               <button
-                onClick={() => removeFromCart(item.name)}
+                onClick={() => removeFromCart(item.itemId || item.name)}
                 style={{
                   background: "none",
                   color: "#ff4d6d",

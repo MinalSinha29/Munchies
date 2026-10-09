@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "seed": "node seed.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test",
+    "seed:orders": "node scripts/seedSampleOrders.js"
   },
   "keywords": [],
   "author": "Minal Sinha",

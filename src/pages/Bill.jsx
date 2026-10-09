@@ -15,7 +15,7 @@ export default function Bill() {
 
     (async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5000/api/orders/${id}`, {
+        const { data } = await axios.get(`/api/orders/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setOrder(data);

@@ -1,0 +1,9 @@
+
+# --- added in Phase 0 ---
+.env
+backend/.env
+**/node_modules/
+backend/node_modules/
+*.log
+__pycache__/
+.venv/

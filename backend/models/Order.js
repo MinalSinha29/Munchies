@@ -2,9 +2,14 @@
 import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema({
+  itemId: String, // links to the menu item (needed for recommendations)
   name: String,
-  price: Number,  // save unit price at the time of order
-  qty: Number
+  price: Number, // unit price at the time of order
+  qty: Number,
+  restaurantId: String,
+  restaurantName: String,
+  category: String,
+  veg: Boolean,
 });
 
 const orderSchema = new mongoose.Schema(
@@ -18,8 +23,11 @@ const orderSchema = new mongoose.Schema(
     tax: { type: Number, default: 0 },
     deliveryFee: { type: Number, default: 0 },
     discount: { type: Number, default: 0 },
-    total: { type: Number, default: 0 },   // grand total
-    status: { type: String, default: "placed" }
+    total: { type: Number, default: 0 }, // grand total
+    status: { type: String, default: "placed" },
+
+    // true for generated demo orders (see scripts/seedSampleOrders.js)
+    isSample: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

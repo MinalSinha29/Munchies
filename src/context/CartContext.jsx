@@ -2,11 +2,16 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 const CartContext = createContext();
 
+// Items are identified by itemId (names can repeat across restaurants).
+export const keyOf = (item) => item.itemId || item.name;
+
 export function CartProvider({ children }) {
   // 🟢 Load cart from localStorage when app starts
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem("munchies-cart");
-    return saved ? JSON.parse(saved) : [];
+    const parsed = saved ? JSON.parse(saved) : [];
+    // drop old cart items saved before itemId existed
+    return parsed.filter((i) => i.itemId);
   });
 
   // 🟢 Whenever cart changes, save to localStorage
@@ -17,10 +22,10 @@ export function CartProvider({ children }) {
   // 🟠 Add item or increase quantity
   const addToCart = (item) => {
     setCart((prev) => {
-      const existing = prev.find((i) => i.name === item.name);
+      const existing = prev.find((i) => keyOf(i) === keyOf(item));
       if (existing) {
         return prev.map((i) =>
-          i.name === item.name ? { ...i, qty: i.qty + 1 } : i
+          keyOf(i) === keyOf(item) ? { ...i, qty: i.qty + 1 } : i
         );
       } else {
         return [...prev, { ...item, qty: 1 }];
@@ -29,19 +34,19 @@ export function CartProvider({ children }) {
   };
 
   // 🔵 Decrease quantity
-  const decreaseQty = (itemName) => {
+  const decreaseQty = (itemKey) => {
     setCart((prev) =>
       prev
         .map((i) =>
-          i.name === itemName ? { ...i, qty: i.qty - 1 } : i
+          keyOf(i) === itemKey ? { ...i, qty: i.qty - 1 } : i
         )
         .filter((i) => i.qty > 0)
     );
   };
 
   // 🔴 Remove item completely
-  const removeFromCart = (itemName) => {
-    setCart((prev) => prev.filter((i) => i.name !== itemName));
+  const removeFromCart = (itemKey) => {
+    setCart((prev) => prev.filter((i) => keyOf(i) !== itemKey));
   };
 
   // 🟢 Clear the cart

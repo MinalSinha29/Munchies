@@ -21,15 +21,10 @@ export default function Payment() {
       // small UX delay
       await new Promise((res) => setTimeout(res, 1200));
 
-      // correct logged-in user id
-      const user = JSON.parse(localStorage.getItem("user"));
-      const userId = user?.id || null;
-
-      // create order in backend
-      const { data } = await axios.post("http://localhost:5000/api/orders", {
-        user: userId,
-        items: cart,
-        total,
+      // The server checks login and calculates names, prices and totals itself,
+      // so we only send which items and how many.
+      const { data } = await axios.post("/api/orders", {
+        items: cart.map((i) => ({ itemId: i.itemId, qty: i.qty })),
         paymentMethod: method,
       });
 
@@ -41,7 +36,12 @@ export default function Payment() {
       navigate(`/order/${orderId}`);
     } catch (error) {
       console.error("Error while placing order:", error);
-      alert("❌ Something went wrong while placing your order.");
+      if (error.response?.status === 401) {
+        alert("Please log in to place your order.");
+        navigate("/auth");
+      } else {
+        alert(error.response?.data?.message || "❌ Something went wrong while placing your order.");
+      }
     } finally {
       setLoading(false);
     }

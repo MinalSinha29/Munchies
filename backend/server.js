@@ -8,6 +8,13 @@ import authRoutes from "./routes/authRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 
 dotenv.config();
+
+// Stop early if the secret is missing (no insecure default)
+if (!process.env.JWT_SECRET) {
+  console.error("❌ JWT_SECRET is missing. Copy backend/.env.example to backend/.env and fill it in.");
+  process.exit(1);
+}
+
 connectDB();
 
 const app = express();

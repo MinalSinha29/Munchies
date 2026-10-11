@@ -6,6 +6,7 @@ import connectDB from "./config/db.js";
 import restaurantRoutes from "./routes/restaurantRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import assistantRoutes from "./routes/assistantRoutes.js";
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use(express.json());
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/assistant", assistantRoutes);
 
 // ✅ Root route
 app.get("/", (req, res) => {
